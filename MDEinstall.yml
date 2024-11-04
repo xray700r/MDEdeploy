@@ -1,0 +1,65 @@
+---
+
+- name: Prep and deploy MDE
+  hosts: all
+  gather_facts: yes
+  become: true
+
+  tasks:
+    - name: Get service facts
+      ansible.builtin.service_facts:
+
+    - name: Update Debian Linux VMs
+      block:
+      
+        - name: check if the MDATP service is running
+          debug:
+            msg: MDATP is not present
+          when: ansible_facts.services["mdatp.service"] is not defined
+       
+        - name: Update apt repo and cache
+          apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+        - name: Upgrade all apt packages
+          apt: upgrade=dist force_apt_get=yes
+        - name: Create MDATP directories
+          file:
+            path: /etc/opt/microsoft/mdatp/
+            recurse: true
+            state: directory
+            mode: 0755
+            owner: root
+            group: root
+
+        - name: Register mdatp_onboard.json
+          stat:
+            path: /etc/opt/microsoft/mdatp/mdatp_onboard.json
+          register: mdatp_onboard
+
+        - name: Copy configuration json to remote host
+          copy:
+            src: "./vars/mdatp_onboard.json"
+            dest: "/etc/opt/microsoft/mdatp"
+            mode: 0600
+            owner: root
+            group: root
+            remote_src: no  
+          when: not mdatp_onboard.stat.exists
+
+        - name: Add Microsoft APT key
+          apt_key:
+            url: https://packages.microsoft.com/keys/microsoft.asc
+            state: present
+
+        - name: Add Microsoft apt repository for MDATP
+          apt_repository:
+            repo: deb [arch=amd64] https://packages.microsoft.com/ubuntu/20.04/prod focal main
+            update_cache: yes
+            state: present
+            filename: microsoft-ubuntufocal
+
+        - name: Install MDATP
+          apt:
+            name: mdatp
+            state: latest
+            update_cache: yes
+      when: ( ansible_facts["os_family"] == "Debian" ) and ( ansible_facts.services["mdatp.service"] is not defined )

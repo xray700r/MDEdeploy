@@ -1,0 +1,27 @@
+---
+- name: Test Ping for VMs
+  hosts:
+    - all
+  gather_facts: yes
+  tasks:
+
+    - name: OS Family    
+      debug: 
+        msg: "{{ansible_facts['os_family']}}"
+
+    - name: Test Windows VMs
+      block:
+        - name: Test Windows reachability to 8.8.8.8 using default vrf
+          win_shell: "ping 8.8.8.8"
+          register: ping_result
+          async: 10
+          #until: ping_result.changed
+          poll: 0
+          #retries: 2
+      when: ( ansible_facts["os_family"] == "Windows" )
+
+    - name: Test Linux VMs
+      block:
+        - name: Test Linux reachability to 8.8.8.8 using default vrf
+          shell: "ping -c 5 8.8.8.8"
+      when: ( ansible_facts["os_family"] == "Linux" ) or ( ansible_facts["os_family"] == "RedHat" ) or ( ansible_facts["os_family"] == "Debian" )

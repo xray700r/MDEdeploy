@@ -1,0 +1,36 @@
+---
+
+- name: Prepare network settings for VM's
+  hosts: all
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Ping Linux Hosts
+      ansible.builtin.ping:
+
+    - name: Set correct timezone 
+      shell: "timedatectl set-timezone Europe/Tirane"
+
+    - name: Set mdatp PUA default action
+      block:
+        - name: Set mdatp PUA default action 
+          shell: "mdatp threat policy set --type potentially_unwanted_application --action audit"
+      rescue:
+        - debug:
+            msg: 'Error applying MDATP PUA default action!'            
+
+    - name: Copy managed configuration json to remote host
+      copy:
+        src: "./vars/mdatp_managed.json"
+        dest: "/etc/opt/microsoft/mdatp/managed"
+        mode: 0600
+        owner: root
+        group: root
+        remote_src: no
+    - name: restart mdatp service
+      systemd:
+        state: started
+        enabled: yes
+        daemon_reload: yes
+        name: mdatp

@@ -1,0 +1,44 @@
+---
+all: 
+  hosts: 
+        localhost:
+            ansible_host: 127.0.0.1  
+
+  
+  children:
+    linuxservers:
+        hosts:
+            db1:     
+               ansible_host: 192.168.1.7
+            db2:     
+               ansible_host: 192.168.1.8
+            db3:     
+               ansible_host: 192.168.1.9
+            db4:     
+               ansible_host: 192.168.1.10
+
+        vars: 
+          ansible_port: 22 
+          ansible_connection: ssh 
+          ansible_user: sysadmin1
+
+    linuxmdeonboard:
+        hosts:
+            webserver1:    
+               ansible_host: 192.168.1.5
+            webserver2:    
+               ansible_host: 192.168.1.6
+        vars: 
+          ansible_port: 22 
+          ansible_connection: ssh 
+          ansible_user: sysadmin2
+
+    docker:
+        hosts:
+            internaldocker:    
+               ansible_host: 192.168.1.111
+
+        vars: 
+          ansible_port: 22 
+          ansible_connection: ssh 
+          ansible_user: sysadmin3          
